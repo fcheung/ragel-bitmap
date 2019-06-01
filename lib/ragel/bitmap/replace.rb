@@ -19,12 +19,15 @@ module Ragel
 
         def source_from(name, numbers)
           width = Math.log2(numbers.max).ceil
-          bitmap =
-            numbers.each_with_index.inject(0) do |accum, (number, index)|
-              accum | (number << (width * index))
-            end
+          directive = [[8, 'C'],
+                      [16, 'S'],
+                      [32, 'L'],
+                      [64, 'Q']].detect { |(size, _symbol)| size >= width }
 
-          "self.#{name} = ::Ragel::Bitmap.new(#{width}, #{bitmap})"
+          raise "bitmap requires more than 64 bit width"
+          bitmap = numbers.pack("#{directive[1]}*")
+
+          %Q[self.#{name} = ::Ragel::Bitmap.new('#{directive[1]}', #{bitmap.inspect}.freeze)]
         end
       end
 

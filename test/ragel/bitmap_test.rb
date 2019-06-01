@@ -30,7 +30,7 @@ module Ragel
     def test_replace
       expected = <<~RUBY
         module Parser
-          self._trans_keys = ::Ragel::Bitmap.new(3, 22737)
+          self._trans_keys = ::Ragel::Bitmap.new('C', "\\x01\\x02\\x03\\x04\\x05".freeze)
         end
       RUBY
 
@@ -66,12 +66,15 @@ module Ragel
 
     def bitmap_from(numbers)
       width = Math.log2(numbers.max).ceil
-      bitmap =
-        numbers.each_with_index.inject(0) do |accum, (number, index)|
-          accum | (number << (width * index))
-        end
+      directive = [[8, 'C'],
+                  [16, 'S'],
+                  [32, 'L'],
+                  [64, 'Q']].detect { |(size, _symbol)| size >= width }
 
-      Bitmap.new(width, bitmap)
+      bitmap = numbers.pack("#{directive[1]}*")
+
+
+      Bitmap.new(directive[1], bitmap)
     end
   end
 end
